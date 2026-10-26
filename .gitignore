@@ -1,0 +1,13 @@
+# ROS 2 build outputs
+build/
+install/
+log/
+
+# VS Code local settings
+.vscode/
+
+# Python cache (if any)
+__pycache__/
+*.py[cod]
+
+.vscode/
