@@ -1,0 +1,106 @@
+########################################################################
+# controller_manager configuration used by the gz_ros2_control plugin.
+#
+# Loaded by gz_ros2_control::GazeboSimROS2ControlPlugin (see the <gazebo>
+# block at the end of assets/robot/openarm_v2.0/urdf/openarm_v20.urdf.xacro,
+# only injected when the xacro is expanded with sim:=gz).
+#
+# Only the `position` command interface is used: gz_ros2_control handles
+# position commands by driving joint velocity towards the target, and mixing
+# several claimed command interfaces on one joint is a known source of
+# conflicts (ros-controls/gz_ros2_control#343).
+########################################################################
+controller_manager:
+  ros__parameters:
+    update_rate: 200
+    use_sim_time: true
+
+    joint_state_broadcaster:
+      type: joint_state_broadcaster/JointStateBroadcaster
+
+    left_arm_controller:
+      type: joint_trajectory_controller/JointTrajectoryController
+
+    right_arm_controller:
+      type: joint_trajectory_controller/JointTrajectoryController
+
+    left_gripper_controller:
+      type: position_controllers/JointGroupPositionController
+
+    right_gripper_controller:
+      type: position_controllers/JointGroupPositionController
+
+########################################################################
+# joint_state_broadcaster: publishes every state interface declared in the
+# URDF, i.e. 18 joints (14 arm + 2 actuated fingers + 2 mimic fingers).
+########################################################################
+joint_state_broadcaster:
+  ros__parameters:
+    use_sim_time: true
+
+########################################################################
+# Arm controllers: FollowJointTrajectory action, 7 DoF per arm.
+########################################################################
+left_arm_controller:
+  ros__parameters:
+    use_sim_time: true
+    joints:
+      - openarm_left_joint1
+      - openarm_left_joint2
+      - openarm_left_joint3
+      - openarm_left_joint4
+      - openarm_left_joint5
+      - openarm_left_joint6
+      - openarm_left_joint7
+    command_interfaces:
+      - position
+    state_interfaces:
+      - position
+      - velocity
+    allow_partial_joints_goal: false
+    allow_nonzero_velocity_at_trajectory_end: true
+    constraints:
+      stopped_velocity_tolerance: 0.02
+      goal_time: 0.5
+
+right_arm_controller:
+  ros__parameters:
+    use_sim_time: true
+    joints:
+      - openarm_right_joint1
+      - openarm_right_joint2
+      - openarm_right_joint3
+      - openarm_right_joint4
+      - openarm_right_joint5
+      - openarm_right_joint6
+      - openarm_right_joint7
+    command_interfaces:
+      - position
+    state_interfaces:
+      - position
+      - velocity
+    allow_partial_joints_goal: false
+    allow_nonzero_velocity_at_trajectory_end: true
+    constraints:
+      stopped_velocity_tolerance: 0.02
+      goal_time: 0.5
+
+########################################################################
+# Gripper controllers: plain Float64MultiArray on ~/commands.
+#
+# Only finger_joint1 is driven (range 0.0 ~ 0.7854 rad). finger_joint2 is a
+# <mimic> joint in the URDF: gz_ros2_control refuses a command interface on
+# it, and gz-sim physics does not enforce URDF <mimic>, so the second finger
+# is reported through joint_states but does not move in the simulation.
+########################################################################
+left_gripper_controller:
+  ros__parameters:
+    use_sim_time: true
+    joints:
+      - openarm_left_finger_joint1
+
+right_gripper_controller:
+  ros__parameters:
+    use_sim_time: true
+    joints:
+      - openarm_right_finger_joint1

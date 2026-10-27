@@ -26,6 +26,9 @@ limitations under the License.
   <xacro:arg name="left_can_interface" default="can1" />
   <xacro:arg name="right_can_interface" default="can0" />
   <xacro:arg name="can_fd" default="true" />
+  <xacro:arg name="sim" default="none" />
+  <!-- Expose the arg as a property so expressions like ${sim == 'gz'} work. -->
+  <xacro:property name="sim" value="$(arg sim)" />
 
   <xacro:property name="robot_root" value="$(find openarm_description)/assets/robot/openarm_v2.0" />
   <xacro:property name="config_root" value="${robot_root + '/config'}" />
@@ -50,10 +53,26 @@ limitations under the License.
     left_can_interface="$(arg left_can_interface)"
     right_can_interface="$(arg right_can_interface)"
     can_fd="$(arg can_fd)"
+    sim="$(arg sim)"
     ee_type="pinch_gripper"
     left_arm_prefix="left_"
     right_arm_prefix="right_"
     left_finger_mimic_multiplier="${pinch_finger_mimic_multiplier}"
     right_finger_mimic_multiplier="${pinch_finger_mimic_multiplier}" />
+
+  <!-- ========================= Gazebo (gz sim) ========================= -->
+  <!-- Only injected when launched with sim:=gz. Default sim:=none keeps the
+       robot_description identical for RViz / real hardware. -->
+  <xacro:if value="${sim == 'gz'}">
+    <gazebo>
+      <plugin filename="libgz_ros2_control-system.so"
+              name="gz_ros2_control::GazeboSimROS2ControlPlugin">
+        <parameters>$(find openarm_description)/config/gazebo/controllers.yaml</parameters>
+        <ros>
+          <namespace>/</namespace>
+        </ros>
+      </plugin>
+    </gazebo>
+  </xacro:if>
 
 </robot>

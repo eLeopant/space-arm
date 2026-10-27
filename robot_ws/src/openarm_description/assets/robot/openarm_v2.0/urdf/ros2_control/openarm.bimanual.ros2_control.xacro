@@ -26,17 +26,21 @@ limitations under the License.
              right_arm_prefix:=^|right_
              left_finger_mimic_multiplier:=^|1.0
              right_finger_mimic_multiplier:=^|1.0
-             can_fd:=^|true">
+             can_fd:=^|true
+             sim:=^|none">
 
     <ros2_control name="openarm_left_hardware_interface" type="system">
         <hardware>
           <param name="arm_type">${arm_type}</param>
-          <xacro:if value="${use_fake_hardware}">
+          <xacro:if value="${sim == 'gz'}">
+            <plugin>gz_ros2_control/GazeboSimSystem</plugin>
+          </xacro:if>
+          <xacro:if value="${use_fake_hardware and sim != 'gz'}">
             <plugin>mock_components/GenericSystem</plugin>
             <param name="fake_sensor_commands">${fake_sensor_commands}</param>
             <param name="state_following_offset">0.0</param>
           </xacro:if>
-          <xacro:unless value="${use_fake_hardware}">
+          <xacro:unless value="${use_fake_hardware or sim == 'gz'}">
             <plugin>openarm_hardware/OpenArmHW</plugin>
             <param name="can_interface">${left_can_interface}</param>
             <param name="arm_prefix">${left_arm_prefix}</param>
@@ -89,26 +93,32 @@ limitations under the License.
 
       <xacro:configure_joint joint_name="openarm_${left_arm_prefix}finger_joint1" initial_position="0.0" />
 
-      <!-- <joint name="openarm_${left_arm_prefix}finger_joint2">
-        <param name="mimic">openarm_${left_arm_prefix}finger_joint1</param>
-        <param name="multiplier">${left_finger_mimic_multiplier}</param>
-        <command_interface name="position"/>
+      <!-- Mimic finger: STATE INTERFACE ONLY.
+           gz_ros2_control refuses a command interface on a joint driven by
+           <mimic> in the URDF; the state interface is what makes
+           joint_state_broadcaster publish it (otherwise RViz complains about a
+           missing joint). Note: gz-sim physics does NOT enforce URDF <mimic>,
+           so finger_joint2 stays at 0 unless you also command it explicitly. -->
+      <joint name="openarm_${left_arm_prefix}finger_joint2">
         <state_interface name="position">
           <param name="initial_value">0.0</param>
         </state_interface>
-      </joint> -->
+      </joint>
 
     </ros2_control>
 
     <ros2_control name="openarm_right_hardware_interface" type="system">
         <hardware>
           <param name="arm_type">${arm_type}</param>
-          <xacro:if value="${use_fake_hardware}">
+          <xacro:if value="${sim == 'gz'}">
+            <plugin>gz_ros2_control/GazeboSimSystem</plugin>
+          </xacro:if>
+          <xacro:if value="${use_fake_hardware and sim != 'gz'}">
             <plugin>mock_components/GenericSystem</plugin>
             <param name="fake_sensor_commands">${fake_sensor_commands}</param>
             <param name="state_following_offset">0.0</param>
           </xacro:if>
-          <xacro:unless value="${use_fake_hardware}">
+          <xacro:unless value="${use_fake_hardware or sim == 'gz'}">
             <plugin>openarm_hardware/OpenArmHW</plugin>
             <param name="can_interface">${right_can_interface}</param>
             <param name="arm_prefix">${right_arm_prefix}</param>
@@ -141,14 +151,12 @@ limitations under the License.
 
       <xacro:configure_joint joint_name="openarm_${right_arm_prefix}finger_joint1" initial_position="0.0" />
 
-      <!-- <joint name="openarm_${right_arm_prefix}finger_joint2">
-        <param name="mimic">openarm_${right_arm_prefix}finger_joint1</param>
-        <param name="multiplier">${right_finger_mimic_multiplier}</param>
-        <command_interface name="position"/>
+      <!-- Mimic finger: STATE INTERFACE ONLY (see the left arm comment above). -->
+      <joint name="openarm_${right_arm_prefix}finger_joint2">
         <state_interface name="position">
           <param name="initial_value">0.0</param>
         </state_interface>
-      </joint> -->
+      </joint>
 
     </ros2_control>
 
