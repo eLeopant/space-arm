@@ -52,6 +52,7 @@ limitations under the License.
             left_arm_prefix:='left_'
             right_arm_prefix:='right_'
             can_fd:='true'
+            sim:='none'
             "
             >
 
@@ -149,7 +150,8 @@ limitations under the License.
             left_arm_prefix="${left_arm_prefix}"
             right_arm_prefix="${right_arm_prefix}"
             hand="true"
-            ee_type="${ee_type}"/>
+            ee_type="${ee_type}"
+            sim="${sim}"/>
         </xacro:if>
     </xacro:if>
 
@@ -191,7 +193,8 @@ limitations under the License.
                 fake_sensor_commands="${fake_sensor_commands}"
                 hand="true"
                 can_fd="${can_fd}"
-                ee_type="${ee_type}"/>
+                ee_type="${ee_type}"
+                sim="${sim}"/>
         </xacro:if>
 
     </xacro:if>

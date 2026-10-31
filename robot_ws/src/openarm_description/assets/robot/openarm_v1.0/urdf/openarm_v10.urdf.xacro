@@ -36,6 +36,9 @@ limitations under the License.
   <xacro:arg name="left_arm_base_xyz" default="0.0 0.030 0.697" />
   <xacro:arg name="left_arm_base_rpy" default="-1.5708 0 0" />
   <xacro:arg name="can_fd" default="true" />
+  <xacro:arg name="sim" default="none" />
+  <!-- Expose the arg as a property so expressions like ${sim == 'gz'} work. -->
+  <xacro:property name="sim" value="$(arg sim)" />
   <xacro:property name="accepted_arm_types" value="${('v10', 'v1.0', 'v1_0', 'openarm_v10', 'openarm_v1.0', 'openarm_v1_0')}" />
   <xacro:if value="${'$(arg arm_type)' not in accepted_arm_types}">
     ${xacro.error('assets/robot/openarm_v1.0 supports arm_type in ' + str(accepted_arm_types) + ' (got: $(arg arm_type)). Use assets/robot/openarm_v2.0 for newer hardware variants.')}
@@ -85,6 +88,22 @@ limitations under the License.
   right_arm_base_rpy="$(arg right_arm_base_rpy)"
   left_arm_base_rpy="$(arg left_arm_base_rpy)"
   can_fd="$(arg can_fd)"
+  sim="$(arg sim)"
   />
+
+  <!-- ========================= Gazebo (gz sim) ========================= -->
+  <!-- Only injected when launched with sim:=gz. Default sim:=none keeps the
+       robot_description identical for RViz / real hardware. -->
+  <xacro:if value="${sim == 'gz'}">
+    <gazebo>
+      <plugin filename="libgz_ros2_control-system.so"
+              name="gz_ros2_control::GazeboSimROS2ControlPlugin">
+        <parameters>$(find openarm_description)/config/gazebo/controllers.yaml</parameters>
+        <ros>
+          <namespace>/</namespace>
+        </ros>
+      </plugin>
+    </gazebo>
+  </xacro:if>
 
 </robot>

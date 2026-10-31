@@ -26,6 +26,7 @@ limitations under the License.
              arm_prefix:=''
              bimanual:=false
              can_fd:=^|true
+             sim:=^|none
              no_prefix:=false">
 
     <xacro:property name="joint_prefix" value="${'' if no_prefix else 'openarm_' + arm_prefix}" />
@@ -34,12 +35,15 @@ limitations under the License.
         <hardware>
           <param name="arm_type">${arm_type}</param>
           <param name="prefix">${arm_prefix}</param>
-          <xacro:if value="${use_fake_hardware}">
+          <xacro:if value="${sim == 'gz'}">
+            <plugin>gz_ros2_control/GazeboSimSystem</plugin>
+          </xacro:if>
+          <xacro:if value="${use_fake_hardware and sim != 'gz'}">
             <plugin>mock_components/GenericSystem</plugin>
             <param name="fake_sensor_commands">${fake_sensor_commands}</param>
             <param name="state_following_offset">0.0</param>
           </xacro:if>
-          <xacro:if value="${use_fake_hardware == 0}">
+          <xacro:if value="${use_fake_hardware == 0 and sim != 'gz'}">
             <plugin>openarm_hardware/OpenArmHW</plugin>
             <param name="can_interface">${can_interface}</param>
             <param name="arm_prefix">${arm_prefix}</param>
@@ -100,6 +104,13 @@ limitations under the License.
 
       <xacro:if value="${hand}">
         <xacro:configure_joint joint_name="${joint_prefix}finger_joint1" initial_position="0.0" />
+
+        <!-- Mimic finger: STATE INTERFACE ONLY (see the bimanual variant). -->
+        <joint name="${joint_prefix}finger_joint2">
+          <state_interface name="position">
+            <param name="initial_value">0.0</param>
+          </state_interface>
+        </joint>
       </xacro:if>
 
     </ros2_control>

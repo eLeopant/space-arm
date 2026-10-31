@@ -44,6 +44,24 @@ from launch_ros.actions import Node
 ARM_CONTROLLERS = ("left_arm_controller", "right_arm_controller")
 GRIPPER_CONTROLLERS = ("left_gripper_controller", "right_gripper_controller")
 
+# Accepted arm_type values, kept in sync with display_openarm.launch.py
+VALID_ARM_TYPES = {
+    "v1.0", "v10", "v1_0", "openarm_v1.0", "openarm_v10", "openarm_v1_0",
+    "v2.0", "v20", "v2_0", "openarm_v2.0", "openarm_v20", "openarm_v2_0",
+}
+
+
+def resolve_arm_config(arm_type_str: str) -> tuple[str, str]:
+    """Map an arm_type string to (asset folder, entry xacro file)."""
+    if arm_type_str not in VALID_ARM_TYPES:
+        raise ValueError(
+            f"Invalid arm_type: '{arm_type_str}'. "
+            f"Accepted values: {sorted(VALID_ARM_TYPES)}."
+        )
+    if any(x in arm_type_str for x in ("1.0", "10", "1_0")):
+        return "openarm_v1.0", "openarm_v10.urdf.xacro"
+    return "openarm_v2.0", "openarm_v20.urdf.xacro"
+
 
 def _spawner(controller_name: str) -> Node:
     """Controller spawner that tolerates a slow-to-appear controller_manager."""
@@ -64,26 +82,36 @@ def _spawner(controller_name: str) -> Node:
 def launch_setup(context, *args, **kwargs):
     pkg_share = get_package_share_directory("openarm_description")
 
+    arm_type = context.perform_substitution(LaunchConfiguration("arm_type"))
     robot_preset = context.perform_substitution(LaunchConfiguration("robot_preset"))
     world = context.perform_substitution(LaunchConfiguration("world"))
     gui = context.perform_substitution(LaunchConfiguration("gui")).lower() in ("true", "1")
 
+    folder_name, file_name = resolve_arm_config(arm_type)
+    xacro_path = os.path.join(pkg_share, "assets", "robot", folder_name, "urdf", file_name)
+
     # sim:=gz swaps the mock/CAN hardware for gz_ros2_control and injects the
     # GazeboSimROS2ControlPlugin block at the end of the URDF.
-    xacro_path = os.path.join(
-        pkg_share,
-        "assets",
-        "robot",
-        "openarm_v2.0",
-        "urdf",
-        "openarm_v20.urdf.xacro",
-    )
-    robot_description = xacro.process_file(
-        xacro_path,
-        mappings={
+    if folder_name == "openarm_v1.0":
+        # v1.0 has no robot presets, and ros2_control is off by default there.
+        mappings = {
+            "arm_type": "v10",
+            "body_type": "v10",
+            "bimanual": "true",
+            "ros2_control": "true",
+            "use_fake_hardware": "false",
+            "fake_sensor_commands": "false",
+            "sim": "gz",
+        }
+    else:
+        mappings = {
             "robot_preset": robot_preset,
             "sim": "gz",
-        },
+        }
+
+    robot_description = xacro.process_file(
+        xacro_path,
+        mappings=mappings,
     ).toprettyxml(indent="  ")
 
     world_path = world if os.path.isabs(world) else os.path.join(pkg_share, "worlds", world)
@@ -186,9 +214,14 @@ def generate_launch_description():
     return LaunchDescription([
         SetEnvironmentVariable("GZ_SIM_RESOURCE_PATH", gz_resource_path),
         DeclareLaunchArgument(
+            "arm_type",
+            default_value="v10",
+            description="Arm type: v10/v1.0 (default, our hardware) or v20/v2.0.",
+        ),
+        DeclareLaunchArgument(
             "robot_preset",
             default_value="default_bimanual",
-            description="Robot preset for v2.0 (e.g. default_bimanual, right_arm, left_arm).",
+            description="Robot preset for v2.0 only (e.g. default_bimanual, right_arm, left_arm).",
         ),
         DeclareLaunchArgument(
             "world",
