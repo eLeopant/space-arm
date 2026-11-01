@@ -253,11 +253,13 @@ gz_ros2_control 的规则：**mimic 关节不能有 command interface，但可�
 
 右侧把 `left_arm_prefix` 换成 `right_arm_prefix`。
 
-> **实测结论（v10）**：gz-sim 8 **会**执行 SDF 里的 `<mimic>`（URDF 转 SDF 后生成
-> `<mimic joint="openarm_left_finger_joint1"><multiplier>1</multiplier>...`）。
-> 给 `finger_joint1` 发 0.03，`joint_states` 里 `finger_joint1 = 0.0300`、
-> `finger_joint2 = 0.0300`，两指同步。
-> 所以**不需要**给第二根手指发命令，也不要给它加 command interface。
+> **实测结论（v10）**：gz-sim 8 对 SDF `<mimic>` 的支持**不可靠**——URDF 转 SDF 后确实会生成
+> `<mimic joint="openarm_left_finger_joint1"><multiplier>1</multiplier>...`，但仿真运行时
+> `finger_joint2` 长期停在 `0.0000`（给 `finger_joint1` 发 0.03 后只有前者变化）。
+> 所以：**不要给第二根手指发命令，也不要用它做验收**；只需要 state interface 让
+> `joint_state_broadcaster` 能发布它，避免 RViz 报缺关节。
+> 如果一定要两指同步，可尝试给 `finger_joint2` 也加 command interface 并把两指都放进
+> gripper 控制器（`data: [0.03, 0.03]`），但要先验证 gz_ros2_control 是否接受 mimic 关节的命令接口。
 
 ### 3.5 让 `sim` 穿过 `openarm_robot` 宏（v1.0 特有）
 
@@ -913,5 +915,5 @@ gz service -l | grep create
 - [ ] Step 7：`ListHardwareComponents` 两个组件都是 `GazeboSimSystem` + active
 - [ ] Step 7：`ListControllers` 5 个控制器全 active
 - [ ] Step 7：`FollowJointTrajectory` 返回 `status: 4` / `error_code: 0`，Gazebo + RViz 同步运动
-- [ ] Step 7：夹爪发 `0.03` 后 `finger_joint1` 与 `finger_joint2` 同时 = `0.0300`
+- [ ] Step 7：夹爪发 `0.03` 后 `finger_joint1` = `0.0300`（`finger_joint2` 是 mimic，gz 下不稳定，不作断言）
 

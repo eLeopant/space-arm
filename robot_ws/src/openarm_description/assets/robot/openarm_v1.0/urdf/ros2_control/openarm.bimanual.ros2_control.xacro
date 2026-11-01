@@ -103,8 +103,9 @@ limitations under the License.
              gz_ros2_control refuses a command interface on a joint driven by
              <mimic> in the URDF; the state interface is what makes
              joint_state_broadcaster publish it (otherwise RViz complains about
-             a missing joint). gz-sim does keep the mimic constraint, so
-             finger_joint2 follows finger_joint1 in the simulation. -->
+             a missing joint). WARNING: gz-sim 8 does NOT reliably enforce the
+             URDF <mimic> constraint - in practice finger_joint2 stays at its
+             initial value, so do not use it as a validation signal. -->
         <joint name="openarm_${left_arm_prefix}finger_joint2">
           <state_interface name="position">
             <param name="initial_value">0.0</param>

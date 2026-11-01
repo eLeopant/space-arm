@@ -1,5 +1,7 @@
 # OpenArm 项目地图（v1.0 主线）
 
+> **AI 会话请直接读 [`AI_HANDOFF.md`](AI_HANDOFF.md)**（一页开工）；本文件是给人看的结构说明。
+>
 > 目的：让新同学在 5 分钟内知道「要改什么 → 打开哪个文件」，不用通读全部 xacro。
 > 仓库：`/home/leo/space-arm_ws`；唯一 ROS 2 包：`robot_ws/src/openarm_description`
 > 实物版本：**v1.0（`v10`）**；v2.0 并存，差异见 §9。
@@ -161,7 +163,7 @@ Float64MultiArray     → /left_gripper_controller/commands (JointGroupPositionC
 
 - `update_rate: 200`（与 `worlds/openarm_empty.sdf` 的 1 ms 物理步长无关，可独立调）
 - 只用 `position` command interface：同一关节声明多个接口时 gz_ros2_control 只认第一个（[#343](https://github.com/ros-controls/gz_ros2_control/issues/343)）
-- `finger_joint2` 只声明 state interface：mimic 关节不能下命令，gz-sim 会按 SDF 的 `<mimic>` 自动让它跟随
+- `finger_joint2` 只声明 state interface。⚠️ gz-sim 8 对 `<mimic>` 的支持**不可靠**（实测该关节长期停在 0），验收只看 `finger_joint1`
 
 ## 7. 常用命令（最小集）
 
@@ -248,7 +250,7 @@ ros2 topic hz /clock          → 869 Hz（RTF ≈ 0.87）
 /joint_states                 → 18 个关节
 FollowJointTrajectory(左臂)   → status: 4, error_code: 0
   left_joint1 = 0.3000, left_joint4 = 0.4000
-夹爪发 0.03                   → finger_joint1 = 0.0300, finger_joint2 = 0.0300
+夹爪发 0.03                   → finger_joint1 = 0.0300（finger2 是 mimic，gz 下不稳定，不作断言）
 ```
 
 自检命令：
