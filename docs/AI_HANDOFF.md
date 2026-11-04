@@ -41,6 +41,7 @@
 | `assets/robot/openarm_v1.0/urdf/ros2_control/openarm.ros2_control.xacro` | 单臂版 | 同上 |
 | `assets/robot/openarm_v1.0/config/arm/{joint_limits,inertials,control_gains,kinematics*}.yaml` | 限位 / 惯量 / 增益 / 尺寸 | 调参 |
 | `assets/end_effector/parallel_link/config/*` | v1.0 夹爪（**prismatic** 手指） | 夹爪参数 |
+| `assets/sensor/camera/openarm_hand_camera.xacro` | ★ 手眼相机宏（gz camera sensor，`camera:=true` 时挂到 `openarm_right_hand`） | 改相机位置/分辨率 |
 | `config/gazebo/controllers.yaml` | ★ 仿真控制器（5 个，`update_rate: 200`） | 加 / 调控制器 |
 | `worlds/openarm_empty.sdf` | ★ 空世界（ground + sun + 4 个 system 插件） | 换场景 |
 | `launch/gazebo_openarm.launch.py` | ★ Gazebo + RViz 一键启动 | 改启动流程 |
@@ -172,6 +173,7 @@ ros2 control list_controllers                    # 已装 ros2controlcli，可�
 | `world` | `openarm_empty.sdf` | `worlds/` 下文件名或绝对路径 |
 | `gui` | `true` | `false` = `gz sim -s`（无窗口，CI 用） |
 | `rviz` | `true` | 是否同时起 RViz2 |
+| `camera` | `true` | 挂载手眼相机并桥接 `/hand_camera/image`（仅 v1.0，见 §14） |
 
 ### xacro
 
@@ -284,21 +286,22 @@ finger1=0.030 finger2=-0.000
 ## 10. 工作区状态
 
 ```
-HEAD = 6bfbf77 "arm ctrl publisher"（新增 armctrl_py_topic 包）
-     = f722e2a "v10 double arm with rviz gz2"（v1.0 仿真改动已提交）
+HEAD = ca49f11 "docs"（PROJECT_MAP / AI_HANDOFF / AI_PROMPT 首次提交）
+     = 6bfbf77 "arm ctrl publisher"（新增 armctrl_py_topic 包）
+     = f722e2a "v10 double arm with rviz gz2"（v1.0 仿真改动）
      = 190f551 "rviz + gz v02"（v2.0 仿真支持）
 
-当前未提交：
+当前未提交（手眼相机功能，见 §14）：
+  M  assets/robot/openarm_v1.0/urdf/openarm_v10.urdf.xacro     （camera arg + 挂载调用）
+  M  launch/gazebo_openarm.launch.py                            （camera 参数 + camera_bridge）
+  M  docs/AI_HANDOFF.md
   M  docs/PROJECT_MAP.md
-  M  docs/gazebo_simulation_guide.md
-  M  assets/robot/openarm_v1.0/urdf/ros2_control/openarm.bimanual.ros2_control.xacro   （仅注释：mimic 不保证）
-  ?? docs/AI_HANDOFF.md
-  ?? docs/AI_PROMPT.md
+  ?? assets/sensor/camera/                                      （新文件：openarm_hand_camera.xacro）
 ```
 
 - `robot_ws/src/` 下现在有 **2 个包**：`openarm_description`、`armctrl_py_topic`。
 - 构建全部：`colcon build`（不加 `--packages-select`）。
-- `openarm_description` 里 `scripts/` 目录**不存在**（`CMakeLists.txt` 的 foreach 会跳过）。
+- ⚠️ 新增/修改 `assets/` 下的文件后**必须重新 build**：`install(DIRECTORY)` 是复制，不是符号链接。
 
 ## 11. 用户已有的控制节点（`armctrl_py_topic`）
 
@@ -392,6 +395,45 @@ xacro $X ros2_control:=true sim:=gz | grep -cE "GazeboSimSystem"    # 期望 2
 | `docs/AI_PROMPT.md` | 用户给新会话复制提示词用 |
 | `docs/PROJECT_MAP.md` | 需要「功能 → 文件」速查时（人看的） |
 | `docs/gazebo_simulation_guide.md` | 仿真流程出问题、要复现接入步骤时才按小节查（918 行，别整篇读） |
+
+## 14. 手眼相机（Gazebo 专用）
+
+**只在 `camera:=true`（launch 默认）时挂载**，`sim` 默认 `none` 时完全不出现，不影响真机 `robot_description`。
+
+| 项 | 值 |
+|---|---|
+| 宏文件 | `assets/sensor/camera/openarm_hand_camera.xacro`（宏名 `openarm_hand_camera`） |
+| 挂载点 | `openarm_right_hand`，`xyz="0 0 0.12"`，`rpy="0 -1.5708 0"`，`hfov=1.0` |
+| 为什么 rpy 不是 0 | gz camera 光轴沿 link 的 **+X**；v1.0 的 hand 是 **+Z 朝前**，所以绕 Y 转 −90° |
+| 为什么 xyz 是 0.12 | `0.06` 会正好卡在两根手指之间（实测画面两侧全是手指）；指端约 0.059，前伸到 0.12 才无遮挡 |
+| 图像 | 640×480 `rgb8`，`update_rate=15`（实测 ~10 Hz） |
+
+**gz 话题**（由 sensor 的 `<topic>` 固定，不随 model 路径变化）：
+`/hand_camera/image`、`/hand_camera/camera_info`
+
+**ROS 桥接**：launch 里的 `camera_bridge` 把它们桥成 `sensor_msgs/msg/Image` /
+`sensor_msgs/msg/CameraInfo`，只在 `camera:=true` 时启动。
+
+### 怎么看画面（三种，任选）
+
+```bash
+# 1) 独立窗口，最省事（无需 Gazebo GUI）
+ros2 run rqt_image_view rqt_image_view        # 下拉选 /hand_camera/image
+```
+
+2) RViz 里 `Add → Image → Topic: /hand_camera/image`（与机械臂同窗口）
+3) Gazebo GUI 里 `Plugins → Image Display → Topic: /hand_camera/image`（gz 侧，不经 ROS）
+
+### 关键点
+
+- `gui:=false`（headless）下相机**仍然出图**（gz-sim 8 的 ogre2 headless 渲染可用），实测 ~10 Hz。
+- 图像话题 QoS 是 **sensor data（BEST_EFFORT）**：自写订阅者必须用
+  `qos_profile_sensor_data`，否则一帧都收不到。
+- 相机随末端运动（手眼已验证）：发右臂轨迹后画面随姿态变化。
+- 当前 world 只有地面 + 机器人，所以画面多是灰色地面；要看"东西"就往
+  `worlds/openarm_empty.sdf` 里加模型，或用 Gazebo 的 Insert 面板。
+- 想改装到腕部：改根 xacro 里的 `parent_link="openarm_right_link7"` 并相应调 `xyz`。
+- 关掉相机：`ros2 launch ... camera:=false`（同时不再挂载 link 和桥接）。
 
 
 

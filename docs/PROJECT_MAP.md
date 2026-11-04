@@ -73,7 +73,8 @@ openarm_description/
 | 改手指 mimic 比例 | `assets/end_effector/pinch_gripper/config/joint/joint_mimics.yaml` | 只对 v2.0 生效 |
 | 单臂 ↔ 双臂 | `.../urdf/robot/openarm_robot.xacro` 的 `bimanual` 参数 | |
 | 改 ros2_control 接口 | `.../urdf/ros2_control/*.xacro` | 每个关节 3 个 command + 3 个 state |
-| 挂相机 | `assets/sensor/zed/urdf_wrapper/openarm_zed_wrapper.xacro` | 需要 `zed_description` |
+| 挂相机 | `assets/sensor/camera/openarm_hand_camera.xacro`（`camera:=true` 自动挂到右夹爪） | 见 AI_HANDOFF §14 |
+| 看相机画面 | `ros2 run rqt_image_view rqt_image_view` → 选 `/hand_camera/image` | 手眼，随末端运动 |
 | RViz 看模型 | `launch/display_openarm.launch.py` + `rviz/bimanual.rviz` | 无物理、无 /clock |
 | 跑 Gazebo 仿真 | `launch/gazebo_openarm.launch.py` | 默认 `arm_type:=v10` |
 | 仿真控制器增删/调参 | `config/gazebo/controllers.yaml` | 只允许 `position` command interface |
