@@ -43,6 +43,8 @@ limitations under the License.
             arm_connected_to='base'
             body_connected_to='world'
             bimanual:=false
+            left_arm:=true
+            right_arm:=true
             right_arm_base_xyz='0 0 0'
             left_arm_base_xyz='0 0 0'
             right_arm_base_rpy='0 0 0'
@@ -88,6 +90,7 @@ limitations under the License.
         kinematics_link="${body_kinematics_link}" />
 
         <!-- left arm -->
+        <xacro:if value="${left_arm}">
         <xacro:openarm_arm
         arm_type="${arm_type}"
         arm_prefix="left_"
@@ -101,8 +104,10 @@ limitations under the License.
         kinematics="${kinematics}"
         kinematics_link="${kinematics_link}"
         kinematics_offset="${kinematics_offset}" />
+        </xacro:if>
 
         <!-- right arm -->
+        <xacro:if value="${right_arm}">
         <xacro:openarm_arm
         arm_type="${arm_type}"
         arm_prefix="right_"
@@ -116,7 +121,9 @@ limitations under the License.
         kinematics="${kinematics}"
         kinematics_link="${kinematics_link}"
         kinematics_offset="${kinematics_offset}" />
+        </xacro:if>
 
+        <xacro:if value="${left_arm}">
         <xacro:openarm_ee
             connected_to="openarm_left_link7"
             arm_type="${arm_type}"
@@ -127,6 +134,8 @@ limitations under the License.
             ee_inertials="${ee_inertials}"
             ee_joints_limits="${ee_joints_limits}"
         />
+        </xacro:if>
+        <xacro:if value="${right_arm}">
         <xacro:openarm_ee
             connected_to="openarm_right_link7"
             arm_type="${arm_type}"
@@ -137,6 +146,7 @@ limitations under the License.
             ee_inertials="${ee_inertials}"
             ee_joints_limits="${ee_joints_limits}"
         />
+        </xacro:if>
 
         <!-- ros2_control hardware interfaces for bimanual setup -->
         <xacro:if value="${ros2_control}">
@@ -149,6 +159,8 @@ limitations under the License.
             fake_sensor_commands="${fake_sensor_commands}"
             left_arm_prefix="${left_arm_prefix}"
             right_arm_prefix="${right_arm_prefix}"
+            left_arm="${left_arm}"
+            right_arm="${right_arm}"
             hand="true"
             ee_type="${ee_type}"
             sim="${sim}"/>

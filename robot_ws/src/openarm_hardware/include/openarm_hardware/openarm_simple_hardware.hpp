@@ -127,6 +127,12 @@ class OpenArmHW : public hardware_interface::SystemInterface {
   // Generated joint names for this arm instance
   std::vector<std::string> joint_names_;
 
+  // Mimic finger (finger_joint2) is mechanically driven by finger_joint1 on the
+  // real hardware, so it is exported as a STATE-ONLY interface that mirrors the
+  // gripper position. The URDF declares it with <mimic multiplier="1" offset="0">.
+  std::string mimic_finger_joint_name_;
+  double mimic_finger_pos_state_ = 0.0;
+
   // ROS2 control state and command vectors
   std::vector<double> pos_commands_;
   std::vector<double> vel_commands_;

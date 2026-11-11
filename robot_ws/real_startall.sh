@@ -24,8 +24,8 @@ cleanup() {
 trap cleanup INT TERM
 
 # ===== 依次启动（后台） =====
-echo ">>> 启动 Gazebo..."
-ros2 launch openarm_bringup openarm.bimanual.launch.py arm_type:=v10 use_fake_hardware:=false &
+echo ">>> 启动 右臂（真机）..."
+ros2 launch openarm_bringup openarm.right_only.launch.py arm_type:=v10 use_fake_hardware:=false right_can_interface:=can0 &
 PIDS+=($!)
 
 # 等 move_group 服务起来再启动 ctrl_node（ctrl_node 里 wait_for_service 也会等，但这样日志更清晰）

@@ -4,10 +4,10 @@ moveit_controller_manager: moveit_simple_controller_manager/MoveItSimpleControll
 
 moveit_simple_controller_manager:
   controller_names:
-    - openarm_right_controller
-    - openarm_right_gripper_controller
+    - right_joint_trajectory_controller
+    - right_gripper_controller
 
-  openarm_right_controller:
+  right_joint_trajectory_controller:
     type: FollowJointTrajectory
     joints:
       - openarm_right_joint1
@@ -17,7 +17,7 @@ moveit_simple_controller_manager:
       - openarm_right_joint5
       - openarm_right_joint6
       - openarm_right_joint7
-  openarm_right_gripper_controller:
+  right_gripper_controller:
     type: FollowJointTrajectory
     joints:
       - openarm_right_finger_joint1

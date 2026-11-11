@@ -3,7 +3,7 @@ import rclpy
 from rclpy.node import Node
 import math
 from tf_transformations import quaternion_from_euler
-
+from control_msgs.action import FollowJointTrajectory
 from trajectory_msgs.msg import JointTrajectory
 from sensor_msgs.msg import JointState
 
@@ -19,8 +19,9 @@ class CtrlNode(Node):
         self.get_logger().info("控制节点启动！")
         
         # 1. 创建发布者（发轨迹给 Gazebo 控制器）
-        self.right_arm_publisher = self.create_publisher(JointTrajectory, "/right_arm_controller/joint_trajectory", 10)
-        
+        # self.right_arm_publisher = self.create_publisher(JointTrajectory, "/right_arm_controller/joint_trajectory", 10)
+        self.right_arm_publisher = self.create_publisher(JointTrajectory, "/right_joint_trajectory_controller/joint_trajectory", 10)
+
         # 2. 订阅当前关节状态（为 MoveIt 提供起点）
         self.latest_joint_state = None
         self.joint_state_sub = self.create_subscription(JointState, "/joint_states", self.joint_state_callback, 10)
@@ -88,7 +89,7 @@ class CtrlNode(Node):
         # 1. 构造目标姿态 PoseStamped
         target_pose = msg
         if target_pose.header.frame_id == None:
-            target_pose.header.frame_id == "openarm_body_link0"
+            target_pose.header.frame_id = "openarm_body_link0"
         target_pose.header.stamp = self.get_clock().now().to_msg()
 
 
@@ -156,7 +157,7 @@ class CtrlNode(Node):
         self.get_logger().info("🚀 已成功下发轨迹给 Gazebo 控制器！\n")
 
 def main():
-    rclpy.init(args=['--ros-args', '-p', 'use_sim_time:=true'])
+    rclpy.init(args=None)
     ctrl_node = CtrlNode()
     try:
         rclpy.spin(ctrl_node)

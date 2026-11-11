@@ -32,6 +32,11 @@ limitations under the License.
   <xacro:arg name="use_fake_hardware" default="false" />
   <xacro:arg name="fake_sensor_commands" default="false" />
   <xacro:arg name="bimanual" default="true" />
+  <!-- Which arms to instantiate. Default: both (unchanged behaviour).
+       Set left_arm:=false to build the bimanual skeleton (world + body) with the
+       right arm only - used for single-arm bring-up / MoveIt. -->
+  <xacro:arg name="left_arm" default="true" />
+  <xacro:arg name="right_arm" default="true" />
   <xacro:arg name="right_arm_base_xyz" default="0.0 -0.030 0.697" />
   <xacro:arg name="right_arm_base_rpy" default="1.5708 0 0" />
   <xacro:arg name="left_arm_base_xyz" default="0.0 0.030 0.697" />
@@ -88,6 +93,8 @@ limitations under the License.
   arm_connected_to="base"
   body_connected_to="world"
   bimanual="$(arg bimanual)"
+  left_arm="$(arg left_arm)"
+  right_arm="$(arg right_arm)"
   right_arm_base_xyz="$(arg right_arm_base_xyz)"
   left_arm_base_xyz="$(arg left_arm_base_xyz)"
   right_arm_base_rpy="$(arg right_arm_base_rpy)"

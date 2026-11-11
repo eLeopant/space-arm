@@ -108,8 +108,13 @@ void OpenArmHW::generate_joint_names() {
   if (hand_) {
     std::string gripper_joint_name = "openarm_" + arm_prefix_ + "finger_joint1";
     joint_names_.push_back(gripper_joint_name);
+    // The mimic finger is state-only (see export_state_interfaces()).
+    mimic_finger_joint_name_ = "openarm_" + arm_prefix_ + "finger_joint2";
     RCLCPP_INFO(rclcpp::get_logger("OpenArmHW"), "Added gripper joint: %s",
                 gripper_joint_name.c_str());
+    RCLCPP_INFO(rclcpp::get_logger("OpenArmHW"),
+                "Added mimic gripper joint (state only): %s",
+                mimic_finger_joint_name_.c_str());
   } else {
     RCLCPP_INFO(rclcpp::get_logger("OpenArmHW"),
                 "Gripper joint NOT added because hand_=false");
@@ -199,6 +204,16 @@ OpenArmHW::export_state_interfaces() {
         joint_names_[i], hardware_interface::HW_IF_EFFORT, &tau_states_[i]));
   }
 
+  // The mimic finger is driven by finger_joint1 (URDF: <mimic multiplier="1"
+  // offset="0">), so expose it as a state-only interface. Without this the URDF
+  // declares one more state interface than the hardware exports, which makes
+  // resource_manager abort and ros2_control_node crash during introspection.
+  if (hand_) {
+    state_interfaces.emplace_back(hardware_interface::StateInterface(
+        mimic_finger_joint_name_, hardware_interface::HW_IF_POSITION,
+        &mimic_finger_pos_state_));
+  }
+
   return state_interfaces;
 }
 
@@ -276,6 +291,9 @@ hardware_interface::return_type OpenArmHW::read(
       // Unimplemented: Velocity and torque mapping
       vel_states_[ARM_DOF] = 0;  // gripper_motors[0].get_velocity();
       tau_states_[ARM_DOF] = 0;  // gripper_motors[0].get_torque();
+
+      // Mimic finger: same value as finger_joint1 (multiplier=1, offset=0).
+      mimic_finger_pos_state_ = pos_states_[ARM_DOF];
     }
   }
 

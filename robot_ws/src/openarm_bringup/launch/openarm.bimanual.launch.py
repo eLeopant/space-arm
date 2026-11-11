@@ -76,7 +76,7 @@ def generate_robot_description(context: LaunchContext, description_package, desc
         xacro_path,
         mappings={
             "arm_type": arm_type_str,
-            "bimanual": "false",
+            "bimanual": "true",
             "use_fake_hardware": use_fake_hardware_str,
             "ros2_control": "true",
             "right_can_interface": right_can_interface_str,
