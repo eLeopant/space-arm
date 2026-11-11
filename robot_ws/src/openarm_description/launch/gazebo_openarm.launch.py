@@ -86,6 +86,7 @@ def launch_setup(context, *args, **kwargs):
     robot_preset = context.perform_substitution(LaunchConfiguration("robot_preset"))
     world = context.perform_substitution(LaunchConfiguration("world"))
     gui = context.perform_substitution(LaunchConfiguration("gui")).lower() in ("true", "1")
+    camera = context.perform_substitution(LaunchConfiguration("camera")).lower() in ("true", "1")
 
     folder_name, file_name = resolve_arm_config(arm_type)
     xacro_path = os.path.join(pkg_share, "assets", "robot", folder_name, "urdf", file_name)
@@ -102,6 +103,7 @@ def launch_setup(context, *args, **kwargs):
             "use_fake_hardware": "false",
             "fake_sensor_commands": "false",
             "sim": "gz",
+            "camera": "true" if camera else "false",
         }
     else:
         mappings = {
@@ -133,6 +135,20 @@ def launch_setup(context, *args, **kwargs):
         name="clock_bridge",
         arguments=["/clock@rosgraph_msgs/msg/Clock[gz.msgs.Clock"],
         output="screen",
+    )
+
+    # 手眼相机：gz sensor 发 /hand_camera/image，桥接到 ROS 供 rqt_image_view 看。
+    # 只在 camera:=true 时启动；gui:=false（无渲染）时不会有图像帧。
+    camera_bridge = Node(
+        package="ros_gz_bridge",
+        executable="parameter_bridge",
+        name="camera_bridge",
+        arguments=[
+            "/hand_camera/image@sensor_msgs/msg/Image[gz.msgs.Image",
+            "/hand_camera/camera_info@sensor_msgs/msg/CameraInfo[gz.msgs.CameraInfo",
+        ],
+        output="screen",
+        condition=IfCondition(LaunchConfiguration("camera")),
     )
 
     gz_sim = IncludeLaunchDescription(
@@ -194,6 +210,7 @@ def launch_setup(context, *args, **kwargs):
     return [
         robot_state_publisher,
         clock_bridge,
+        camera_bridge,
         gz_sim,
         spawn_robot,
         *event_handlers,
@@ -232,6 +249,11 @@ def generate_launch_description():
             "gui",
             default_value="true",
             description="Start the Gazebo GUI. Set false for headless simulations.",
+        ),
+        DeclareLaunchArgument(
+            "camera",
+            default_value="true",
+            description="Attach the hand-eye camera to openarm_right_hand (v1.0 only) and bridge /hand_camera/image to ROS.",
         ),
         DeclareLaunchArgument(
             "rviz",

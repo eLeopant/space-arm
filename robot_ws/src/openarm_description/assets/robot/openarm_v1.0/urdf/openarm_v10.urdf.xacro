@@ -15,6 +15,7 @@ limitations under the License.
 <robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="openarm">
 
   <xacro:include filename="$(find openarm_description)/assets/robot/openarm_v1.0/urdf/robot/openarm_robot.xacro"/>
+  <xacro:include filename="$(find openarm_description)/assets/sensor/camera/openarm_hand_camera.xacro"/>
 
   <xacro:arg name="arm_type" default="v10" />
   <xacro:arg name="body_type" default="v10" />
@@ -39,6 +40,10 @@ limitations under the License.
   <xacro:arg name="sim" default="none" />
   <!-- Expose the arg as a property so expressions like ${sim == 'gz'} work. -->
   <xacro:property name="sim" value="$(arg sim)" />
+  <!-- 手眼相机：默认关闭，只由 gazebo launch 传 camera:=true 打开 -->
+  <xacro:arg name="camera" default="false" />
+  <xacro:property name="camera" value="$(arg camera)" />
+  <xacro:property name="bimanual_flag" value="$(arg bimanual)" />
   <xacro:property name="accepted_arm_types" value="${('v10', 'v1.0', 'v1_0', 'openarm_v10', 'openarm_v1.0', 'openarm_v1_0')}" />
   <xacro:if value="${'$(arg arm_type)' not in accepted_arm_types}">
     ${xacro.error('assets/robot/openarm_v1.0 supports arm_type in ' + str(accepted_arm_types) + ' (got: $(arg arm_type)). Use assets/robot/openarm_v2.0 for newer hardware variants.')}
@@ -90,6 +95,18 @@ limitations under the License.
   can_fd="$(arg can_fd)"
   sim="$(arg sim)"
   />
+
+  <!-- ========================= Hand-eye camera ========================= -->
+  <!-- 只在 camera:=true 且双臂时挂载；默认不挂，保持 robot_description 不变。 -->
+  <!-- 注意：xacro 会把 "true"/"false" 推断成布尔，所以不能写 camera == 'true' -->
+  <xacro:if value="${camera and bimanual_flag}">
+    <xacro:openarm_hand_camera parent_link="openarm_right_hand"
+                               camera_name="hand_camera"
+                               xyz="0 0 0.12"
+                               rpy="0 -1.5708 0"
+                               hfov="1.0"
+                               topic="/hand_camera/image"/>
+  </xacro:if>
 
   <!-- ========================= Gazebo (gz sim) ========================= -->
   <!-- Only injected when launched with sim:=gz. Default sim:=none keeps the
