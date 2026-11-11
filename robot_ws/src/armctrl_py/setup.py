@@ -1,6 +1,6 @@
 from setuptools import find_packages, setup
 
-package_name = 'armctrl_py_topic'
+package_name = 'armctrl_py'
 
 setup(
     name=package_name,
@@ -24,7 +24,7 @@ setup(
     },
     entry_points={
         'console_scripts': [
-            'armctrl = armctrl_py_topic.armctrl:main',
+            'armctrl = armctrl_py.armctrl:main',
         ],
     },
 )

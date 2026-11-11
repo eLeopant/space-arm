@@ -31,19 +31,26 @@ class CtrlNode(Node):
         while not self.plan_client.wait_for_service(timeout_sec=1.0):
             pass
         self.get_logger().info("MoveIt 服务已连接！")
+        
+        # 订阅者监听posestamped话题，有关于位置姿态指令的消息就会回调来做ik并输出关节角度给底层
+        self.target_sub = self.create_subscription(
+            PoseStamped,"/target_pose", self.target_pose_callback, 10
+        )
 
         self.isplanning = False
-        # 每 5 秒执行一次规划（实际工程中可以改为接收到上位机指令才触发）
-        self.timer = self.create_timer(5.0, self.plan_and_execute)
 
     def joint_state_callback(self, msg: JointState):
         self.latest_joint_state = msg
 
-    def plan_and_execute(self):
+    def target_pose_callback(self, msg:PoseStamped):
         # 防止上一次规划还没结束就触发新的
-        if self.isplanning or self.latest_joint_state is None:
+        if self.isplanning == True:
+            self.get_logger().warn("已经在规划了...")
             return
-
+        if self.latest_joint_state is None:
+            self.get_logger().warn("没有看到起始点位置姿态，规划不了...")
+            return
+        
         self.isplanning = True
         self.get_logger().info("\n--- 开始请求 MoveIt 规划 ---")
 
@@ -79,16 +86,11 @@ class CtrlNode(Node):
         mpr.start_state.joint_state = self.latest_joint_state
 
         # 1. 构造目标姿态 PoseStamped
-        target_pose = PoseStamped()
-        target_pose.header.frame_id = "openarm_body_link0"  # 务必确认你的基坐标系名字
+        target_pose = msg
+        if target_pose.header.frame_id == None:
+            target_pose.header.frame_id == "openarm_body_link0"
         target_pose.header.stamp = self.get_clock().now().to_msg()
-        target_pose.pose.position.x = target_x
-        target_pose.pose.position.y = target_y
-        target_pose.pose.position.z = target_z
-        target_pose.pose.orientation.x = q[0]
-        target_pose.pose.orientation.y = q[1]
-        target_pose.pose.orientation.z = q[2]
-        target_pose.pose.orientation.w = q[3]
+
 
         # 2. 构造约束条件 (同时约束位置和姿态)
         constraints = Constraints()
