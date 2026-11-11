@@ -1,0 +1,84 @@
+<?xml version="1.0" ?>
+<sdf version="1.9">
+  <world name="default">
+    <!-- ================= 基础系统插件 ================= -->
+    <plugin filename="gz-sim-physics-system" name="gz::sim::systems::Physics"/>
+    <plugin filename="gz-sim-user-commands-system" name="gz::sim::systems::UserCommands"/>
+    <plugin filename="gz-sim-scene-broadcaster-system" name="gz::sim::systems::SceneBroadcaster"/>
+
+    <!-- ================= 光照与地面 ================= -->
+    <light type="directional" name="sun">
+      <cast_shadows>true</cast_shadows>
+      <pose>0 0 10 0 0 0</pose>
+      <diffuse>0.8 0.8 0.8 1</diffuse>
+      <specular>0.2 0.2 0.2 1</specular>
+      <direction>-0.5 0.1 -0.9</direction>
+    </light>
+
+    <model name="ground_plane">
+      <static>true</static>
+      <link name="link">
+        <collision name="collision">
+          <geometry><plane><normal>0 0 1</normal><size>100 100</size></plane></geometry>
+        </collision>
+        <visual name="visual">
+          <geometry><plane><normal>0 0 1</normal><size>100 100</size></plane></geometry>
+          <material><ambient>0.8 0.8 0.8 1</ambient></material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- ================= 1. 静态桌面 ================= -->
+    <model name="table">
+      <static>true</static> <!-- 关键：设为静态，它就飘在空中不会掉 -->
+      <pose>0.5 0 0.4 0 0 0</pose> <!-- 位置: x=0.5, y=0, z=0.4 -->
+      <link name="link">
+        <collision name="collision">
+          <geometry>
+            <!-- 桌面大小：长0.8米，宽0.8米，厚度0.04米 -->
+            <box><size>0.8 0.8 0.04</size></box>
+          </geometry>
+        </collision>
+        <visual name="visual">
+          <geometry><box><size>0.8 0.8 0.04</size></box></geometry>
+          <material>
+            <ambient>0.6 0.4 0.2 1</ambient> <!-- 木头颜色 -->
+            <diffuse>0.6 0.4 0.2 1</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- ================= 2. 可抓取的小立方体 ================= -->
+    <model name="target_cube">
+      <!-- 位置：放在桌面上方一点点 (桌面顶部是0.42, 立方体中心在0.45) -->
+      <pose>0.5 0 0.45 0 0 0</pose> 
+      <link name="link">
+        <inertial>
+          <mass>0.1</mass> <!-- 质量：100克，太重机械臂抓不动，太轻会飞 -->
+          <!-- 惯性张量（物理必须） -->
+          <inertia>
+            <ixx>0.0000167</ixx><ixy>0</ixy><ixz>0</ixz>
+            <iyy>0.0000167</iyy><iyz>0</iyz><izz>0.0000167</izz>
+          </inertia>
+        </inertial>
+        <collision name="collision">
+          <geometry>
+            <!-- 尺寸：6厘米 x 6厘米 x 6厘米 -->
+            <box><size>0.06 0.06 0.06</size></box>
+          </geometry>
+          <!-- 增加摩擦力，防止夹取时打滑 -->
+          <surface><friction><ode><mu>1.0</mu><mu2>1.0</mu2></ode></friction></surface>
+        </collision>
+        <visual name="visual">
+          <geometry><box><size>0.06 0.06 0.06</size></box></geometry>
+          <material>
+            <ambient>1 0 0 1</ambient> <!-- 红色 -->
+            <diffuse>1 0 0 1</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+  </world>
+</sdf>
